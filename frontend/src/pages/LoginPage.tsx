@@ -38,7 +38,7 @@ export function LoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Mood Canvas</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">MoodCanvas</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
             Express how you feel through drawing. Get AI-powered mood insights.
           </p>

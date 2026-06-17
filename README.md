@@ -1,4 +1,4 @@
-# Art Therapy Mood Tracker
+# MoodCanvas
 
 Express emotions through drawing and receive AI-powered mood analysis. Draw on a canvas, submit for analysis, and track your mood history over time.
 
@@ -173,5 +173,3 @@ cd frontend && npm run test && npm run build
 ## Privacy
 
 Drawings are sent to the backend for AI analysis. Thumbnails and mood data are stored per user in Firestore until deleted. Analysis is not performed locally in the browser.
-# TherapyAgent
-# TherapyAgent

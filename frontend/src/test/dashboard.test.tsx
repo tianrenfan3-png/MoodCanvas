@@ -25,7 +25,7 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('Mood Canvas')).toBeInTheDocument()
+    expect(screen.getByText('MoodCanvas')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument()
     expect(screen.getByText(/sent to our server/i)).toBeInTheDocument()
   })

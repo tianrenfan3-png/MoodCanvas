@@ -31,7 +31,7 @@ export function Navbar() {
       <nav className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between" aria-label="Main">
         <Link to="/" className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <Palette size={20} className="text-indigo-500" aria-hidden />
-          Mood Canvas
+          MoodCanvas
         </Link>
 
         <div className="flex items-center gap-1">
