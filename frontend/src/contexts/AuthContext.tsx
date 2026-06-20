@@ -35,6 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function init() {
+      // GitHub Pages only serves a 200 for the base URL (e.g. /MoodCanvas/).
+      // Every other path (e.g. /MoodCanvas/login) returns 404. Firebase's auth
+      // handler at firebaseapp.com makes a verification GET to the redirect-back
+      // URL before completing OAuth — if that GET returns 404 it aborts the flow.
+      //
+      // To work around this, signInWithGoogle() stores a flag in sessionStorage
+      // and navigates the browser to the base URL (200). This effect then detects
+      // that flag and fires signInWithRedirect from the base URL so Firebase will
+      // redirect back to a URL that actually returns 200.
+      if (sessionStorage.getItem('__mc_signin_pending')) {
+        sessionStorage.removeItem('__mc_signin_pending')
+        // Fire and forget — the browser will navigate away immediately.
+        signInWithRedirect(auth, googleProvider)
+        return
+      }
+
       // Await the redirect result FIRST so Firebase has time to exchange the
       // OAuth code and update the auth state before we start listening.
       // Without this await, onAuthStateChanged fires with null immediately
@@ -63,9 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = async () => {
-    // Use redirect instead of popup — GitHub Pages sets COOP: same-origin
-    // which severs the popup's postMessage channel, breaking signInWithPopup.
-    await signInWithRedirect(auth, googleProvider)
+    // We cannot call signInWithRedirect from /login because GitHub Pages returns
+    // 404 for that path, and Firebase's handler verifies the redirect-back URL
+    // returns 200 before completing OAuth (if it gets 404 it aborts).
+    // Solution: set a flag, navigate to the base URL (which returns 200), and
+    // let the AuthProvider's useEffect pick up the flag and fire signInWithRedirect
+    // from there so Firebase redirects back to a URL that returns 200.
+    sessionStorage.setItem('__mc_signin_pending', '1')
+    window.location.replace(import.meta.env.BASE_URL || '/')
   }
 
   const logout = async () => {
