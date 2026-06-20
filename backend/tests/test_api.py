@@ -60,6 +60,20 @@ async def test_ping(client):
 
 
 @pytest.mark.asyncio
+async def test_cors_allows_github_pages(client):
+    resp = await client.options(
+        "/predict",
+        headers={
+            "Origin": "https://tianrenfan3-png.github.io",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "https://tianrenfan3-png.github.io"
+
+
+@pytest.mark.asyncio
 async def test_health(client):
     resp = await client.get("/health")
     assert resp.status_code == 200

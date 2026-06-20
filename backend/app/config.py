@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
+    @property
+    def cors_origin_regex(self) -> str | None:
+        # GitHub Pages project sites (e.g. https://user.github.io/repo/) send this origin.
+        return r"https://[\w-]+\.github\.io"
+
 
 @lru_cache
 def get_settings() -> Settings:
