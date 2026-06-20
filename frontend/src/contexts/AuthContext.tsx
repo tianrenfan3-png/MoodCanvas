@@ -31,17 +31,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isFirebaseConfigured) return
 
-    // Pick up the result from a redirect-based sign-in (e.g. after returning
-    // from Google's auth page). Must run before onAuthStateChanged so the
-    // loading state isn't cleared too early.
-    getRedirectResult(auth).catch((err) => {
-      console.error('Redirect sign-in error:', err)
-    })
+    let unsubscribeAuth: (() => void) | undefined
+    let cancelled = false
 
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u)
-      setLoading(false)
-    })
+    async function init() {
+      // Await the redirect result FIRST so Firebase has time to exchange the
+      // OAuth code and update the auth state before we start listening.
+      // Without this await, onAuthStateChanged fires with null immediately
+      // (before the credential is processed), loading goes false, and the
+      // login page flashes before the user is recognised.
+      try {
+        await getRedirectResult(auth)
+      } catch (err) {
+        console.error('Redirect sign-in error:', err)
+      }
+
+      if (cancelled) return
+
+      unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+        setUser(u)
+        setLoading(false)
+      })
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+      unsubscribeAuth?.()
+    }
   }, [])
 
   const signInWithGoogle = async () => {
