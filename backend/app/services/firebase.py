@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
+import re
 from typing import Any
 
 import firebase_admin
@@ -26,6 +28,55 @@ _history_repo: HistoryRepository | None = None
 _rewards_repo: RewardsRepository | None = None
 
 
+def _parse_credentials_json(raw: str) -> dict[str, Any]:
+    """Parse service-account JSON from env vars (often malformed on Railway)."""
+    text = raw.strip()
+    if not text:
+        raise ValueError("Empty Firebase credentials JSON")
+
+    # Railway/dashboard values are sometimes wrapped in extra quotes.
+    if text.startswith('"') and text.endswith('"'):
+        try:
+            text = json.loads(text)
+        except json.JSONDecodeError:
+            text = text[1:-1]
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Common Railway mistake: literal newlines inside private_key break json.loads.
+    key_match = re.search(
+        r'"private_key"\s*:\s*"(-----BEGIN PRIVATE KEY-----.*?-----END PRIVATE KEY-----\n?)"',
+        text,
+        re.DOTALL,
+    )
+    if key_match:
+        key_escaped = (
+            key_match.group(1)
+            .replace("\\", "\\\\")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace("\n", r"\n")
+        )
+        repaired = text[: key_match.start(1)] + key_escaped + text[key_match.end(1) :]
+        return json.loads(repaired)
+
+    raise ValueError("Invalid Firebase credentials JSON")
+
+
+def _load_credentials_dict(settings: Settings) -> dict[str, Any]:
+    if settings.firebase_credentials_json_b64:
+        decoded = base64.b64decode(settings.firebase_credentials_json_b64)
+        return json.loads(decoded)
+
+    if settings.firebase_credentials_json:
+        return _parse_credentials_json(settings.firebase_credentials_json)
+
+    raise ValueError("No Firebase credentials configured")
+
+
 def init_firebase(settings: Settings | None = None) -> bool:
     global _firebase_initialized, _db
     settings = settings or get_settings()
@@ -40,8 +91,8 @@ def init_firebase(settings: Settings | None = None) -> bool:
         return True
 
     try:
-        if settings.firebase_credentials_json:
-            cred_dict = json.loads(settings.firebase_credentials_json)
+        if settings.firebase_credentials_json or settings.firebase_credentials_json_b64:
+            cred_dict = _load_credentials_dict(settings)
             cred = credentials.Certificate(cred_dict)
         elif settings.firebase_credentials_path and os.path.exists(settings.firebase_credentials_path):
             cred = credentials.Certificate(settings.firebase_credentials_path)

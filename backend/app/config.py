@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     firebase_credentials_path: str | None = None
     firebase_credentials_json: str | None = None
+    firebase_credentials_json_b64: str | None = None
     firestore_project_id: str | None = None
     use_firestore_emulator: bool = False
     firestore_emulator_host: str = "localhost:8080"
@@ -29,7 +30,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins: list[str] = []
+        for origin in self.cors_origins.split(","):
+            value = origin.strip().rstrip("/")
+            if value:
+                origins.append(value)
+        return origins
 
     @property
     def cors_origin_regex(self) -> str | None:

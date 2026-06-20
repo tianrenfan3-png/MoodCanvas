@@ -15,9 +15,13 @@ def create_analyzer(settings: Settings | None = None) -> MoodAnalyzer:
     settings = settings or get_settings()
     if settings.analyzer_type == "mock":
         return MockMoodAnalyzer()
-    from app.services.analyzer.clip_analyzer import CLIPMoodAnalyzer
+    try:
+        from app.services.analyzer.clip_analyzer import CLIPMoodAnalyzer
 
-    return CLIPMoodAnalyzer(settings)
+        return CLIPMoodAnalyzer(settings)
+    except ImportError as exc:
+        logger.warning("CLIP unavailable (%s) — falling back to mock analyzer", exc)
+        return MockMoodAnalyzer()
 
 
 def get_analyzer() -> MoodAnalyzer:

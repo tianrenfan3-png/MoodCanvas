@@ -3,6 +3,9 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+[build.buildArgs]
+ANALYZER_TYPE = "mock"
+
 [deploy]
 healthcheckPath = "/ping"
 healthcheckTimeout = 300
