@@ -7,7 +7,8 @@ import {
 } from 'react'
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   type User,
 } from 'firebase/auth'
@@ -29,6 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured) return
+
+    // Pick up the result from a redirect-based sign-in (e.g. after returning
+    // from Google's auth page). Must run before onAuthStateChanged so the
+    // loading state isn't cleared too early.
+    getRedirectResult(auth).catch((err) => {
+      console.error('Redirect sign-in error:', err)
+    })
+
     return onAuthStateChanged(auth, (u) => {
       setUser(u)
       setLoading(false)
@@ -36,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider)
+    // Use redirect instead of popup — GitHub Pages sets COOP: same-origin
+    // which severs the popup's postMessage channel, breaking signInWithPopup.
+    await signInWithRedirect(auth, googleProvider)
   }
 
   const logout = async () => {
