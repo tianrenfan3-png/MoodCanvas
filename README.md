@@ -133,10 +133,14 @@ Interactive docs at `http://localhost:8000/docs` when the backend is running.
 
 ### Backend (Railway / Render / Fly.io)
 
-1. Build from `backend/Dockerfile`
-2. Set environment variables (use `FIREBASE_CREDENTIALS_JSON` for the service account contents)
-3. Set `ANALYZER_TYPE=mock` on free tiers without GPU; use `clip` on GPU instances
-4. Set `CORS_ORIGINS` to your frontend URL
+1. Build from the repo-root `Dockerfile` (or `backend/Dockerfile` if the service root is `backend/`)
+2. Set environment variables:
+   - `FIREBASE_CREDENTIALS_JSON_B64` — base64 of the service account JSON (`python backend/scripts/encode_firebase_credentials.py key.json`)
+   - `FIRESTORE_PROJECT_ID` — Firebase project ID
+   - `ANALYZER_TYPE=mock` on small instances; use `clip` only on GPU/large plans
+   - `CORS_ORIGINS` — e.g. `https://your-user.github.io` (no trailing slash)
+3. **Railway networking:** if deploy logs show `/ping` 200 but the public URL returns 502, open **Settings → Networking → Public Networking**, edit your domain, and set **Target port** to `8080` (must match the `PORT` Railway injects — see deploy logs).
+4. Do **not** set a custom `PORT` variable in Railway unless you also update the domain target port to match.
 
 ### Frontend (Vercel or GitHub Pages)
 

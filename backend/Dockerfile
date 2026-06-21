@@ -26,6 +26,7 @@ ENV ANALYZER_TYPE=${ANALYZER_TYPE}
 ENV CLIP_MODEL=ViT-B/32
 ENV ENVIRONMENT=production
 
-EXPOSE 8000
+# Do not EXPOSE a fixed port — Railway injects $PORT (usually 8080). A wrong
+# EXPOSE value makes the public domain target port mismatch and returns 502.
 
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
