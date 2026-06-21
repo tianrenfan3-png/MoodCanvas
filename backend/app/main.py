@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -18,15 +19,28 @@ from app.services.firebase import init_firebase
 logger = logging.getLogger(__name__)
 
 
+def _clip_runtime_available() -> bool:
+    try:
+        import torch  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _warmup_analyzer_in_background() -> None:
     settings = get_settings()
     if settings.environment == "test":
         return
 
+    if settings.analyzer_type == "clip" and not _clip_runtime_available():
+        logger.warning("ANALYZER_TYPE=clip but PyTorch is not installed — using mock analyzer")
+        return
+
     def _run() -> None:
         try:
-            # Let Railway healthchecks pass before loading CLIP into memory.
-            time.sleep(15)
+            # Let platform healthchecks pass before loading CLIP into memory.
+            time.sleep(5)
             analyzer = get_analyzer()
             if not analyzer.is_ready():
                 logger.info("Warming up mood analyzer in background...")
@@ -34,16 +48,30 @@ def _warmup_analyzer_in_background() -> None:
         except Exception as e:
             logger.error("Analyzer warmup failed: %s", e)
 
-    threading.Thread(target=_run, daemon=True).start()
+    threading.Thread(target=_run, name="analyzer-warmup", daemon=True).start()
+
+
+def _startup_background() -> None:
+    settings = get_settings()
+    try:
+        init_firebase(settings)
+    except Exception as e:
+        logger.error("Firebase init error: %s", e)
+    _warmup_analyzer_in_background()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
     logging.basicConfig(level=logging.INFO)
-    init_firebase(settings)
-    logger.info("API starting on port %s (analyzer=%s)", settings.port, settings.analyzer_type)
-    _warmup_analyzer_in_background()
+    port = os.environ.get("PORT", str(settings.port))
+    logger.info(
+        "MoodCanvas API ready on port %s (analyzer=%s, env=%s)",
+        port,
+        settings.analyzer_type,
+        settings.environment,
+    )
+    threading.Thread(target=_startup_background, name="startup", daemon=True).start()
     yield
 
 

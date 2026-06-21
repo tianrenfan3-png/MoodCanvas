@@ -1,3 +1,4 @@
+# Railway entrypoint when the service root is the repository root (not backend/).
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -10,16 +11,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements-docker.txt .
+COPY backend/requirements-docker.txt ./requirements-docker.txt
 RUN pip install --no-cache-dir -r requirements-docker.txt
 
-# CLIP is optional — skip the heavy PyTorch stack on small Railway instances.
 RUN if [ "$ANALYZER_TYPE" = "clip" ]; then \
       pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu \
       && pip install --no-cache-dir git+https://github.com/openai/CLIP.git; \
     fi
 
-COPY app ./app
+COPY backend/app ./app
 
 ENV PYTHONUNBUFFERED=1
 ENV ANALYZER_TYPE=${ANALYZER_TYPE}

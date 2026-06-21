@@ -1,0 +1,13 @@
+# Use this when the Railway service root is the repository root.
+# If the service root is `backend/`, Railway uses backend/railway.toml instead.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[build.buildArgs]
+ANALYZER_TYPE = "mock"
+
+[deploy]
+healthcheckPath = "/ping"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
